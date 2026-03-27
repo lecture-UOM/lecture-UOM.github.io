@@ -35,15 +35,22 @@
       font-size: 20px;
       font-weight: bold;
     }
+    #status {
+      margin-top: 18px;
+      color: red;
+      white-space: pre-wrap;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <div class="box">
-    <h1>교수용 페이지</h1>
-    <p>아래 버튼을 누르면 학생 화면도 같은 페이지 번호를 보게 됩니다.</p>
+    <h1>교사용 페이지</h1>
+    <p>버튼을 누르면 Firebase에 현재 페이지 번호를 저장합니다.</p>
     <button onclick="prevPage()">이전</button>
     <button onclick="nextPage()">다음</button>
     <div id="pageInfo">현재 페이지: 1</div>
+    <div id="status">준비 중...</div>
   </div>
 
   <script type="module">
@@ -58,33 +65,47 @@
       storageBucket: "lecture-uom.firebasestorage.app",
       messagingSenderId: "1071262547326",
       appId: "1:1071262547326:web:ca2999788ce8422d12072f",
-      measurementId: "G-QW41EHM2VL"
+      measurementId: "G-QW41EHM2VL" 
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const status = document.getElementById("status");
+    const pageInfo = document.getElementById("pageInfo");
 
     let currentPage = 1;
     const roomId = "class101";
-    const pageInfo = document.getElementById("pageInfo");
 
-    function updatePage() {
-      pageInfo.textContent = `현재 페이지: ${currentPage}`;
-      set(ref(db, `rooms/${roomId}`), {
-        page: currentPage,
-        updatedAt: Date.now()
-      });
+    let db;
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getDatabase(app);
+      status.textContent = "Firebase 연결 성공";
+    } catch (err) {
+      status.textContent = "초기화 에러: " + err.message;
     }
 
-    window.nextPage = function() {
+    async function updatePage() {
+      try {
+        pageInfo.textContent = `현재 페이지: ${currentPage}`;
+        await set(ref(db, `rooms/${roomId}`), {
+          page: currentPage,
+          updatedAt: Date.now()
+        });
+        status.textContent = `쓰기 성공: page=${currentPage}`;
+      } catch (err) {
+        status.textContent = "쓰기 에러: " + err.message;
+      }
+    }
+
+    window.nextPage = async function () {
       currentPage++;
-      updatePage();
+      await updatePage();
     };
 
-    window.prevPage = function() {
+    window.prevPage = async function () {
       if (currentPage > 1) {
         currentPage--;
-        updatePage();
+        await updatePage();
       }
     };
 
