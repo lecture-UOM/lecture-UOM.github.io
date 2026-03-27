@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>교사용 테스트</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      padding: 30px 20px;
+      background: #f5f5f5;
+      text-align: center;
+    }
+    .box {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    button {
+      padding: 12px 18px;
+      margin: 8px;
+      border: none;
+      border-radius: 10px;
+      background: black;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #pageInfo {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>교수용 페이지</h1>
+    <p>아래 버튼을 누르면 학생 화면도 같은 페이지 번호를 보게 됩니다.</p>
+    <button onclick="prevPage()">이전</button>
+    <button onclick="nextPage()">다음</button>
+    <div id="pageInfo">현재 페이지: 1</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "여기에입력",
+      authDomain: "여기에입력",
+      databaseURL: "여기에입력",
+      projectId: "여기에입력",
+      storageBucket: "여기에입력",
+      messagingSenderId: "여기에입력",
+      appId: "여기에입력"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let currentPage = 1;
+    const roomId = "class101";
+    const pageInfo = document.getElementById("pageInfo");
+
+    function updatePage() {
+      pageInfo.textContent = `현재 페이지: ${currentPage}`;
+      set(ref(db, `rooms/${roomId}`), {
+        page: currentPage,
+        updatedAt: Date.now()
+      });
+    }
+
+    window.nextPage = function() {
+      currentPage++;
+      updatePage();
+    };
+
+    window.prevPage = function() {
+      if (currentPage > 1) {
+        currentPage--;
+        updatePage();
+      }
+    };
+
+    updatePage();
+  </script>
+</body>
+</html>
