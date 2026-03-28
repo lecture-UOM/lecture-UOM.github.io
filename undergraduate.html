@@ -3,36 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>학생용 테스트</title>
+  <title>학생용 PDF 뷰어</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       margin: 0;
-      padding: 30px 20px;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       background: #f5f5f5;
-      text-align: center;
     }
-    .box {
-      max-width: 700px;
-      margin: 0 auto;
+    .topbar {
+      padding: 12px;
       background: white;
-      border-radius: 16px;
-      padding: 30px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    }
-    #pageInfo {
-      margin-top: 20px;
-      font-size: 28px;
+      border-bottom: 1px solid #ddd;
       font-weight: bold;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    #status {
+      color: red;
+      font-size: 14px;
+      font-weight: normal;
+    }
+    iframe {
+      width: 100%;
+      height: calc(100vh - 70px);
+      border: none;
+      background: white;
     }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>학생용 페이지</h1>
-    <p>교수가 넘긴 페이지 번호가 여기에 자동으로 표시됩니다.</p>
-    <div id="pageInfo">연결 중...</div>
+  <div class="topbar">
+    <span id="pageInfo">교수 화면 대기 중...</span>
+    <span id="status">준비 중...</span>
   </div>
+
+  <iframe id="pdfFrame"></iframe>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
@@ -54,15 +60,27 @@
 
     const roomId = "class101";
     const pageInfo = document.getElementById("pageInfo");
+    const status = document.getElementById("status");
+    const pdfFrame = document.getElementById("pdfFrame");
 
     onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
       const data = snapshot.val();
+
       if (!data) {
-        pageInfo.textContent = "교사 화면 대기 중...";
+        pageInfo.textContent = "교수 화면 대기 중...";
+        status.textContent = "데이터 없음";
         return;
       }
-      pageInfo.textContent = `현재 페이지: ${data.page}`;
+
+      const pdf = data.pdf || "chapter1.pdf";
+      const page = data.page || 1;
+
+      pageInfo.textContent = `현재 페이지: ${page}`;
+      pdfFrame.src = `./${pdf}#page=${page}`;
+      status.textContent = "읽기 성공";
+    }, (error) => {
+      status.textContent = "읽기 에러: " + error.message;
     });
   </script>
 </body>
-</html>
+</html> 
