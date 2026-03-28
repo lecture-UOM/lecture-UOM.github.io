@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Understanding of Mathematics - 교수용 - Bae Soo Ki</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+  
+  <style>
+    /* 기본 CSS 초기화 및 폰트 설정 */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Pretendard, -apple-system, sans-serif; }
+    body { background-color: #f4f6f9; color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* 상단 헤더 스타일 (University Branding) */
+    header { background: linear-gradient(135deg, #2c3e50 0%, #001f3f 100%); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    header h1 { font-size: 1.2rem; font-weight: 700; }
+    header p { font-size: 0.8rem; opacity: 0.8; text-align: right; }
+
+    /* 중앙 메인 레이아웃 (컨트롤러 + PDF 뷰어) */
+    main { flex: 1; display: flex; flex-direction: column; padding: 15px; gap: 15px; }
+
+    /* 컨트롤 대시보드 영역 */
+    #dashboard { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 12px; }
+
+    /* 선택창 그룹 디자인 */
+    .control-group { display: flex; gap: 10px; flex-wrap: wrap; }
+    select { flex: 1; min-width: 140px; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: 0.3s; background-color: white; outline: none; }
+    select:focus { border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.15); }
+
+    /* 페이지 이동 버튼 그룹 */
+    .btn-group { display: flex; justify-content: space-between; align-items: center; background: #eee; padding: 5px; border-radius: 10px; margin-top: 5px; gap: 5px; }
+    button { padding: 12px 20px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; outline: none; color: white; flex: 1; }
+    
+    /* 버튼 색상 트렌디하게 변경 */
+    button#prevBtn { background-color: #6c757d; } /* Grey */
+    button#prevBtn:hover { background-color: #5a6268; transform: translateY(-1px); }
+    button#prevBtn:active { transform: translateY(1px); }
+
+    button#nextBtn { background-color: #007bff; } /* Blue */
+    button#nextBtn:hover { background-color: #0069d9; transform: translateY(-1px); }
+    button#nextBtn:active { transform: translateY(1px); }
+
+    /* 현재 상태 및 페이지 정보 */
+    #pageInfo { font-weight: 700; font-size: 1.3rem; color: #007bff; text-align: center; width: 80px; }
+    #statusLine { font-size: 0.85rem; color: #28a745; text-align: center; background: rgba(40, 167, 69, 0.1); padding: 5px; border-radius: 20px; font-weight: 500; }
+
+    /* 수업 시작 버튼 (눈에 띄게) */
+    #startClassBtn { background-color: #28a745; margin-top: 5px; padding: 15px; } /* Green */
+    #startClassBtn:hover { background-color: #218838; }
+
+    /* PDF 뷰어 영역 (iframe) */
+    #viewerWrap { flex: 1; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    iframe { width: 100%; height: 100%; border: none; display: block; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>수학의 이해 (UoM)</h1>
+    <div>
+      <p>HOSEO UNIVERSITY</p>
+      <p>Prof. BAE SOO KI</p>
+    </div>
+  </header>
+
+  <main>
+    <div id="dashboard">
+      <div class="control-group">
+        <select id="chapterSelect"></select>
+        <select id="fileSelect"></select>
+      </div>
+
+      <div class="btn-group">
+        <button id="prevBtn">Prev</button>
+        <div id="pageInfo">0 / 0</div>
+        <button id="nextBtn">Next</button>
+      </div>
+
+      <p id="statusLine">● Firebase Connected - Students Synced</p>
+      <button id="startClassBtn" class="hidden-logic">수업 시작 / 동기화 전송</button>
+    </div>
+
+    <div id="viewerWrap">
+      <iframe id="pdfFrame"></iframe>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+
+    // ----- [교수님 체크 포인트 1] 이 부분을 교수님의 실제 Firebase 설정 값으로 '반드시' 대체하세요 -----
+    const firebaseConfig = {
+      apiKey: "교수님의_apiKey",
+      authDomain: "교수님의_authDomain",
+      databaseURL: "https://lecture-uom-default-rtdb.firebaseio.com",
+      projectId: "교수님의_projectId",
+      storageBucket: "교수님의_storageBucket",
+      messagingSenderId: "교수님의_messagingSenderId",
+      appId: "교수님의_appId"
+    };
+    // -------------------------------------------------------------------------------------------
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const roomId = "class101";
+
+    // 데이터 정의 (구조 유지)
+    const chapters = {
+      chapter1: ["1-1.pdf", "1-2.pdf", "1-3.pdf", "1-4.pdf", "1-5.pdf"],
+      chapter2: ["2-1.pdf", "2-2.pdf", "2-3.pdf"],
+      chapter3: ["3-1.pdf", "3-2.pdf", "3-3.pdf"],
+      chapter14: ["14-1.pdf", "14-2.pdf", "14-3.pdf"],
+      chapterex: ["ex-1.pdf", "ex-2.pdf"]
+    };
+
+    let currentChapter = "chapter1";
+    let currentFile = chapters.chapter1[0];
+    let currentPage = 1;
+
+    // DOM 요소
+    const chapterSelect = document.getElementById("chapterSelect");
+    const fileSelect = document.getElementById("fileSelect");
+    const pageInfo = document.getElementById("pageInfo");
+    const pdfFrame = document.getElementById("pdfFrame");
+    const startClassBtn = document.getElementById("startClassBtn");
+
+    // 장 선택창 초기화
+    for (const ch in chapters) {
+      const option = document.createElement("option");
+      option.value = ch;
+      option.textContent = ch.toUpperCase();
+      chapterSelect.appendChild(option);
+    }
+
+    // 절 선택창 초기화 함수
+    function updateFileOptions(ch) {
+      fileSelect.innerHTML = "";
+      chapters[ch].forEach((file) => {
+        const option = document.createElement("option");
+        option.value = file;
+        option.textContent = file;
+        fileSelect.appendChild(option);
+      });
+      currentFile = chapters[ch][0];
+    }
+
+    // 경로 조합 함수
+    function getCurrentPdfPath() {
+      return `${currentChapter}/${currentFile}`;
+    }
+
+    // [핵심] Firebase 데이터 전송 및 뷰어 업데이트 함수
+    async function updateView() {
+      const pdfPath = getCurrentPdfPath();
+      
+      // 뷰어 업데이트 (pdfjs_clean 경로 유지)
+      pdfFrame.src = `/pdfjs_clean/web/viewer.html?file=/${pdfPath}#page=${currentPage}`;
+      
+      // 상태 표시 업데이트
+      pageInfo.textContent = `${currentPage} / ...`; // 뷰어 로드 전 임시 표시
+
+      // Firebase로 데이터 쏘기 (started: true 유지로 학생용 강제 전환)
+      try {
+        await set(ref(db, `rooms/${roomId}`), {
+          pdf: pdfPath,
+          page: currentPage,
+          started: true, // 이 값이 true여야 학생 화면이 cover에서 전환됨
+          updatedAt: Date.now()
+        });
+        document.getElementById("statusLine").textContent = "● Synced - PDF: " + currentFile;
+      } catch (err) {
+        document.getElementById("statusLine").textContent = "● Sync Error: " + err.message;
+        document.getElementById("statusLine").style.color = "red";
+      }
+    }
+
+    // 뷰어 로드 시 페이지 정보 업데이트 (iframe 내부 접근 필요)
+    pdfFrame.addEventListener("load", () => {
+      // PDF.js가 로드된 후 총 페이지 수를 가져오는 것은 까다로우므로 
+      // 일단 교수용에서는 선택된 페이지만 표시하는 것으로 단순화합니다.
+      pageInfo.textContent = `${currentPage} P`;
+    });
+
+    // 이벤트 리스너 설정
+    chapterSelect.addEventListener("change", (e) => {
+      currentChapter = e.target.value;
+      updateFileOptions(currentChapter);
+      currentPage = 1;
+      updateView();
+    });
+
+    fileSelect.addEventListener("change", (e) => {
+      currentFile = e.target.value;
+      currentPage = 1;
+      updateView();
+    });
+
+    document.getElementById("prevBtn").addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
+        updateView();
+      }
+    });
+
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      currentPage++; // 끝 페이지 제한은 PDF.js가 처리하도록 맡김
+      updateView();
+    });
+
+    // 수업 시작 / 동기화 전송 버튼 동작
+    startClassBtn.addEventListener("click", () => {
+      updateView(); // 단순히 현재 화면 정보를 다시 전송하여 시작 신호를 확실히 함
+    });
+
+    // 초기화 실행
+    updateFileOptions(currentChapter);
+    // 페이지 로드 시 뷰어는 빈 상태로 두거나 첫 페이지를 로드할 수 있습니다.
+    // 여기서는 첫 페이지를 바로 로드하도록 합니다.
+    updateView(); 
+
+  </script>
+</body>
+</html>
