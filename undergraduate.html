@@ -76,7 +76,7 @@
       const page = data.page || 1;
 
       pageInfo.textContent = `현재 페이지: ${page}`;
-      pdfFrame.src = `./${pdf}?v=${Date.now()}#page=${page}`; 
+      pdfFrame.src = `/pdfjs/web/viewer.html?file=/${pdf}#page=${page}`;
       status.textContent = "읽기 성공";
     }, (error) => {
       status.textContent = "읽기 에러: " + error.message;
