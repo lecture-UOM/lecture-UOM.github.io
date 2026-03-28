@@ -131,7 +131,7 @@
       try {
         const pdfPath = getCurrentPdfPath();
         pageInfo.textContent = `현재 파일: ${pdfPath} / 페이지: ${currentPage}`;
-        pdfFrame.src = `/pdfjs/web/viewer.html?file=/${pdfPath}#page=${currentPage}`;
+        pdfFrame.src = `/pdfjs_clean/web/viewer.html?file=/${pdfPath}#page=${currentPage}`;
 
         await set(ref(db, `rooms/${roomId}`), {
           pdf: pdfPath,
