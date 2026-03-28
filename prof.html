@@ -152,7 +152,7 @@ window.startClass = async function () {
     await set(ref(db, `rooms/${roomId}`), {
       pdf: pdfPath,
       page: currentPage,
-      started: false,
+      started: true,
       updatedAt: Date.now()
     });
 
