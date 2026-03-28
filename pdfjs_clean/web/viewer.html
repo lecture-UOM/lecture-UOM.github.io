@@ -32,8 +32,16 @@ See https://github.com/adobe-type-tools/cmap-resources
 <script src="../build/pdf.mjs" type="module"></script>
 
     <link rel="stylesheet" href="viewer.css" />
-
-  <script src="viewer.mjs" type="module"></script>
+<style>
+  #openFile,
+  #secondaryOpenFile,
+  #printButton,
+  #downloadButton,
+  #secondaryPrint,
+  #secondaryDownload {
+    display: none !important;
+  }
+</style> 
   </head>
 
   <body tabindex="0">
