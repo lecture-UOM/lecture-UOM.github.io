@@ -84,7 +84,7 @@
 
     async function updatePage() {
       try {
-        pdfFrame.src = `./${pdfName}#page=${currentPage}`;
+        pdfFrame.src = `./${pdfName}?v=${Date.now()}#page=${currentPage}`; 
         pageInfo.textContent = `현재 페이지: ${currentPage}`;
 
         await set(ref(db, `rooms/${roomId}`), {
