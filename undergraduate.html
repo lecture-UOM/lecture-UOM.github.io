@@ -134,7 +134,7 @@
 
         titleText.textContent = formatDisplayName(pdf);
         pageInfo.textContent = `현재 페이지 ${page}`;
-        pdfFrame.src = `/pdfjs/web/viewer.html?file=/${pdf}#page=${page}`;
+        pdfFrame.src = `/pdfjs_clean/web/viewer.html?file=/${pdf}#page=${page}`;
       },
       (error) => {
         titleText.textContent = "연결 오류";
