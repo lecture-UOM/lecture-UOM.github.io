@@ -67,6 +67,7 @@
   <div class="topbar">
     <button onclick="prevPage()">이전</button>
     <button onclick="nextPage()">다음</button>
+    <button onclick="startClass()">수업 시작</button>
     <span id="pageInfo">현재 파일: chapter1/1-1.pdf / 페이지: 1</span>
     <span id="status">준비 중...</span>
   </div>
@@ -144,7 +145,22 @@
         status.textContent = "쓰기 에러: " + err.message;
       }
     }
+window.startClass = async function () {
+  try {
+    const pdfPath = getCurrentPdfPath();
 
+    await set(ref(db, `rooms/${roomId}`), {
+      pdf: pdfPath,
+      page: currentPage,
+      started: true,
+      updatedAt: Date.now()
+    });
+
+    status.textContent = "수업 시작 신호 전송";
+  } catch (err) {
+    status.textContent = "시작 에러: " + err.message;
+  }
+}; 
     function renderChapterButtons() {
       chapterBar.innerHTML = "";
 
