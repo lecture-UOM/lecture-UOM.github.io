@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>교수용 PDF 뷰어</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f5;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      background: white;
+      border-bottom: 1px solid #ddd;
+      flex-wrap: wrap;
+    }
+    .chapterbar, .sectionbar {
+      position: sticky;
+      z-index: 15;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      background: #fafafa;
+      border-bottom: 1px solid #ddd;
+    }
+    .chapterbar { top: 61px; }
+    .sectionbar { top: 114px; }
+
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
+      background: black;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .chapter-btn.active,
+    .section-btn.active {
+      background: #2563eb;
+    }
+    #pageInfo {
+      font-weight: bold;
+    }
+    #status {
+      color: red;
+      font-size: 14px;
+    }
+    iframe {
+      width: 100%;
+      height: calc(100vh - 170px);
+      border: none;
+      background: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <button onclick="prevPage()">이전</button>
+    <button onclick="nextPage()">다음</button>
+    <button onclick="startClass()">수업 시작</button>
+    <span id="pageInfo">현재 파일: chapter1/1-1.pdf / 페이지: 1</span>
+    <span id="status">준비 중...</span>
+  </div>
+
+  <div class="chapterbar" id="chapterBar"></div>
+  <div class="sectionbar" id="sectionBar"></div>
+
+  <iframe id="pdfFrame"></iframe>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuXErMs-3Wj24Xo-o40mZRQUHLLX1r-0I",
+      authDomain: "lecture-uom.firebaseapp.com",
+      databaseURL: "https://lecture-uom-default-rtdb.firebaseio.com",
+      projectId: "lecture-uom",
+      storageBucket: "lecture-uom.firebasestorage.app",
+      messagingSenderId: "1071262547326",
+      appId: "1:1071262547326:web:ca2999788ce8422d12072f",
+      measurementId: "G-QW41EHM2VL"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const roomId = "class101";
+
+    const chapters = {
+      chapter1: ["1-1.pdf", "1-2.pdf", "1-3.pdf", "1-4.pdf", "1-5.pdf", "11-1.pdf"],
+      chapter2: ["2-1.pdf", "2-2.pdf", "2-3.pdf", "2-4.pdf", "2-5.pdf"],
+      chapter3: ["3-1.pdf", "3-2.pdf", "3-3.pdf", "3-4.pdf", "3-5.pdf", "3-6.pdf", "3-7.pdf"],
+      chapter4: ["4-1.pdf", "4-2.pdf", "4-3.pdf", "4-4.pdf", "4-5.pdf", "4-6.pdf", "4-7.pdf"],
+      chapter5: ["5-1.pdf", "5-2.pdf", "5-3.pdf", "5-4.pdf", "5-5.pdf", "5-6.pdf"],
+      chapter6: ["6-1.pdf", "6-2.pdf", "6-3.pdf", "6-4.pdf", "6-5.pdf"],
+      chapter7: ["7-1.pdf", "7-2.pdf", "7-3.pdf", "7-4.pdf", "7-5.pdf", "7-6.pdf"],
+      chapter8: ["8-1.pdf", "8-2.pdf", "8-3.pdf", "8-4.pdf", "8-5.pdf", "8-6.pdf", "8-7.pdf", "8-8.pdf"],
+      chapter9: ["9-1.pdf", "9-2.pdf", "9-3.pdf", "9-4.pdf", "9-5.pdf", "9-6.pdf", "9-7.pdf", "9-8.pdf"],
+      chapter11: ["11-1.pdf", "11-2.pdf", "11-3.pdf", "11-4.pdf", "11-5.pdf"],
+      chapter12: ["12-1.pdf", "12-2.pdf", "12-3.pdf", "12-4.pdf", "12-5.pdf"],
+      chapter13: ["13-1.pdf", "13-2.pdf", "13-3.pdf", "13-4.pdf", "13-5.pdf", "13-6.pdf", "13-7.pdf"],
+      chapter14: ["14-1.pdf", "14-2.pdf", "14-3.pdf", "14-4.pdf", "14-5.pdf", "14-6.pdf", "14-56Q.pdf"],
+      chapterex: ["ex-2.pdf", "ex-3.pdf", "ex-4.pdf", "ex-5.pdf", "ex-6.pdf", "ex-7.pdf", "ex-8.pdf", "ex-9.pdf", "ex-11.pdf", "ex-12.pdf", "ex-13-1.pdf", "ex-13-2.pdf", "ex-14.pdf"]
+    };
+
+    let currentChapter = "chapter1";
+    let currentFile = "1-1.pdf";
+    let currentPage = 1;
+
+    const pageInfo = document.getElementById("pageInfo");
+    const status = document.getElementById("status");
+    const pdfFrame = document.getElementById("pdfFrame");
+    const chapterBar = document.getElementById("chapterBar");
+    const sectionBar = document.getElementById("sectionBar");
+
+    function getCurrentPdfPath() {
+      return `${currentChapter}/${currentFile}`;
+    }
+
+    async function updateView() {
+      try {
+        const pdfPath = getCurrentPdfPath();
+        pageInfo.textContent = `현재 파일: ${pdfPath} / 페이지: ${currentPage}`;
+        pdfFrame.src = `/pdfjs_clean/web/viewer.html?file=/${pdfPath}#page=${currentPage}`;
+
+        await set(ref(db, `rooms/${roomId}`), {
+          pdf: pdfPath,
+          page: currentPage,
+          updatedAt: Date.now()
+        });
+
+        status.textContent = "쓰기 성공";
+      } catch (err) {
+        status.textContent = "쓰기 에러: " + err.message;
+      }
+    }
+window.startClass = async function () {
+  try {
+    const pdfPath = getCurrentPdfPath();
+
+    await set(ref(db, `rooms/${roomId}`), {
+      pdf: pdfPath,
+      page: currentPage,
+      started: true,
+      updatedAt: Date.now()
+    });
+
+    status.textContent = "수업 시작 신호 전송";
+  } catch (err) {
+    status.textContent = "시작 에러: " + err.message;
+  }
+}; 
+    function renderChapterButtons() {
+      chapterBar.innerHTML = "";
+
+      Object.keys(chapters).forEach((chapterName) => {
+        const btn = document.createElement("button");
+        btn.textContent = chapterName;
+        btn.className = "chapter-btn";
+        if (chapterName === currentChapter) btn.classList.add("active");
+
+        btn.onclick = async () => {
+          currentChapter = chapterName;
+          currentFile = chapters[chapterName][0];
+          currentPage = 1;
+
+          renderChapterButtons();
+          renderSectionButtons();
+          await updateView();
+        };
+
+        chapterBar.appendChild(btn);
+      });
+    }
+
+    function renderSectionButtons() {
+      sectionBar.innerHTML = "";
+
+      chapters[currentChapter].forEach((fileName) => {
+        const btn = document.createElement("button");
+        btn.textContent = fileName.replace(".pdf", "");
+        btn.className = "section-btn";
+        if (fileName === currentFile) btn.classList.add("active");
+
+        btn.onclick = async () => {
+          currentFile = fileName;
+          currentPage = 1;
+
+          renderSectionButtons();
+          await updateView();
+        };
+
+        sectionBar.appendChild(btn);
+      });
+    }
+
+    window.nextPage = async function () {
+      currentPage++;
+      await updateView();
+    };
+
+    window.prevPage = async function () {
+      if (currentPage > 1) {
+        currentPage--;
+        await updateView();
+      }
+    };
+
+    renderChapterButtons();
+    renderSectionButtons();
+    updateView();
+  </script>
+</body>
+</html>

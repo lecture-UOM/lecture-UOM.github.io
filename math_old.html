@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>수학의 이해</title>
+  <style>
+    body {
+      margin: 0;
+      background: #efefef;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    #splashScreen {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      background: #efefef;
+    }
+
+    #coverImage {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #efefef;
+    }
+
+    #viewerWrap {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      background: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="splashScreen">
+    <img id="coverImage" src="/cover.png" alt="수학의 이해 표지">
+  </div>
+
+  <div id="viewerWrap">
+    <iframe id="pdfFrame"></iframe>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuXErMs-3Wj24Xo-o40mZRQUHLLX1r-0I",
+      authDomain: "lecture-uom.firebaseapp.com",
+      databaseURL: "https://lecture-uom-default-rtdb.firebaseio.com",
+      projectId: "lecture-uom",
+      storageBucket: "lecture-uom.firebasestorage.app",
+      messagingSenderId: "1071262547326",
+      appId: "1:1071262547326:web:ca2999788ce8422d12072f",
+      measurementId: "G-QW41EHM2VL"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const roomId = "class101";
+    const splashScreen = document.getElementById("splashScreen");
+    const viewerWrap = document.getElementById("viewerWrap");
+    const pdfFrame = document.getElementById("pdfFrame");
+
+    const splashMinDuration = 5000; // 5초
+    const splashStartTime = Date.now();
+
+    let latestData = null;
+    let switchedToViewer = false;
+
+    function hideViewerButtons() {
+      try {
+        const iframeDoc = pdfFrame.contentDocument || pdfFrame.contentWindow.document;
+        if (!iframeDoc) return;
+
+        const selectors = [
+          "#openFile",
+          "#secondaryOpenFile",
+          "#printButton",
+          "#downloadButton",
+          "#secondaryPrint",
+          "#secondaryDownload"
+        ];
+
+        selectors.forEach((selector) => {
+          const el = iframeDoc.querySelector(selector);
+          if (el) el.style.display = "none";
+        });
+      } catch (e) {
+        console.log("버튼 숨기기 실패", e);
+      }
+    }
+
+    pdfFrame.addEventListener("load", () => {
+      setTimeout(hideViewerButtons, 500);
+      setTimeout(hideViewerButtons, 1500);
+      setTimeout(hideViewerButtons, 3000);
+    });
+
+    function tryShowViewer() {
+      if (switchedToViewer) return;
+      if (!latestData) return;
+      if (!latestData.started) return;
+
+      const elapsed = Date.now() - splashStartTime;
+      if (elapsed < splashMinDuration) {
+        setTimeout(tryShowViewer, splashMinDuration - elapsed);
+        return;
+      }
+
+      const pdf = latestData.pdf || "chapter1/1-1.pdf";
+      const page = latestData.page || 1;
+
+      splashScreen.style.display = "none";
+      viewerWrap.style.display = "block";
+      pdfFrame.src = `/pdfjs_clean/web/viewer.html?file=/${pdf}#page=${page}`;
+      switchedToViewer = true;
+    }
+
+    onValue(
+      ref(db, `rooms/${roomId}`),
+      (snapshot) => {
+        const data = snapshot.val();
+
+        if (!data) {
+          splashScreen.style.display = "block";
+          viewerWrap.style.display = "none";
+          latestData = null;
+          switchedToViewer = false;
+          return;
+        }
+
+        latestData = data;
+
+        if (!switchedToViewer) {
+          tryShowViewer();
+        } else {
+          const pdf = data.pdf || "chapter1/1-1.pdf";
+          const page = data.page || 1;
+          pdfFrame.src = `/pdfjs_clean/web/viewer.html?file=/${pdf}#page=${page}`;
+        }
+      },
+      (error) => {
+        splashScreen.style.display = "block";
+        viewerWrap.style.display = "none";
+        console.error(error);
+      }
+    );
+  </script>
+</body>
+</html> 
