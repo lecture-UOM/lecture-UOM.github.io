@@ -118,6 +118,37 @@
       return clean;
     }
 
+    function hideViewerButtons() {
+      try {
+        const iframeDoc = pdfFrame.contentDocument || pdfFrame.contentWindow.document;
+        if (!iframeDoc) return;
+
+        const selectors = [
+          "#openFile",
+          "#secondaryOpenFile",
+          "#printButton",
+          "#downloadButton",
+          "#secondaryPrint",
+          "#secondaryDownload"
+        ];
+
+        selectors.forEach((selector) => {
+          const el = iframeDoc.querySelector(selector);
+          if (el) {
+            el.style.display = "none";
+          }
+        });
+      } catch (e) {
+        console.log("버튼 숨기기 실패", e);
+      }
+    }
+
+    pdfFrame.addEventListener("load", () => {
+      setTimeout(hideViewerButtons, 500);
+      setTimeout(hideViewerButtons, 1500);
+      setTimeout(hideViewerButtons, 3000);
+    });
+
     onValue(
       ref(db, `rooms/${roomId}`),
       (snapshot) => {
