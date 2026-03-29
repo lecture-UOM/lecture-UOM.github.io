@@ -1,291 +1,189 @@
-
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>수학의이해 실시간 웹 동기화 시스템</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body {
-    background-color: #F3F4F6;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #1F2937;
-}
-.chart-container {
-    position: relative;
-    width: 100%;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
-    height: 400px; 
-    max-height: 500px;
-    padding-bottom: 20px;
-}
-@media (min-width: 768px) {
-    .chart-container {
-        height: 450px;
-    }
-}
-.diagram-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    color: white;
-    font-weight: bold;
-    text-align: center;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: transform 0.2s;
-}
-.diagram-box:hover {
-    transform: translateY(-5px);
-}
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수학의이해 실시간 웹 동기화 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap');
+        
+        body {
+            background-color: #F3F4F6;
+            font-family: 'Pretendard', sans-serif;
+            color: #1F2937;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px; /* 고정 높이 대신 유연한 높이 설정 */
+        }
+        .diagram-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .diagram-box:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        /* 시각적 흐름을 위한 애니메이션 */
+        @keyframes arrow-flow {
+            0% { opacity: 0.3; transform: translateX(-5px); }
+            50% { opacity: 1; transform: translateX(5px); }
+            100% { opacity: 0.3; transform: translateX(-5px); }
+        }
+        .flow-arrow { animation: arrow-flow 2s infinite; }
+    </style>
 </head>
 <body class="antialiased">
 
-<div class="sr-only" id="metadata">
-    Palette: Brilliant Blues & Vibrant Amber (Blue 900, Blue 500, Amber 500).
-    Confirmation: NEITHER Mermaid JS NOR SVG were used anywhere in the output.
-    Update: Specifically fixed Device Usage Chart legend position to 'right' to prevent clipping and ensure it moves as requested.
-</div>
-
-<header class="bg-[#1E3A8A] text-white py-12 px-4 shadow-lg mb-8">
+<header class="bg-[#1E3A8A] text-white py-16 px-4 shadow-xl mb-8">
     <div class="max-w-6xl mx-auto text-center">
-        <h1 class="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">Web-Sync (수학의이해 동기화)</h1>
-        <p class="text-xl md:text-2xl font-light text-[#93C5FD]">수학의이해 강의와 최신 클라우드 기술의 결합</p>
+        <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tight">Web-Sync</h1>
+        <p class="text-xl md:text-2xl font-light text-blue-200">수학의이해 실시간 강의 동기화 시스템</p>
     </div>
 </header>
 
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
-    <section class="mb-12 text-center max-w-4xl mx-auto">
-        <p class="text-lg leading-relaxed text-gray-700">
-            대학교 강의 현장에서 발생하는 교안 페이지 불일치 문제를 혁신적으로 해결하는 <strong>Web-Sync (Understanding of Mathematics Synchronization)</strong> 시스템의 핵심 지표와 기대 효과를 시각화합니다.
+    <section class="mb-12 text-center max-w-3xl mx-auto">
+        <p class="text-lg leading-relaxed text-gray-600">
+            교수자와 학생 간의 <strong>페이지 불일치</strong>를 제로화합니다. <br class="hidden md:block">
+            클라우드 기반 실시간 전송 기술로 끊김 없는 학습 환경을 제공합니다.
         </p>
     </section>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-        <div class="bg-white rounded-xl shadow-md p-8 border-t-4 border-[#F59E0B] flex flex-col items-center justify-center text-center transform transition hover:scale-105">
-            <h2 class="text-2xl font-bold text-[#1E3A8A] mb-2">초저지연 동기화 속도</h2>
-            <div class="text-6xl font-black text-[#F59E0B] my-4">0.1<span class="text-3xl">초</span></div>
-            <p class="text-gray-600">교수자가 페이지를 이동하는 즉시 모든 학생 기기에 실시간 반영되는 속도입니다.</p>
+        <div class="bg-white rounded-2xl shadow-sm p-8 border-b-8 border-[#F59E0B] flex flex-col items-center text-center transition-all hover:shadow-lg">
+            <h2 class="text-xl font-bold text-gray-500 mb-2">동기화 지연 시간</h2>
+            <div class="text-7xl font-black text-[#1E3A8A] my-4">0.1<span class="text-2xl ml-1 text-gray-400">sec</span></div>
+            <p class="text-gray-500 text-sm">인식 불가능한 수준의 즉각적 반응</p>
         </div>
-        <div class="bg-white rounded-xl shadow-md p-8 border-t-4 border-[#3B82F6] flex flex-col items-center justify-center text-center transform transition hover:scale-105">
-            <h2 class="text-2xl font-bold text-[#1E3A8A] mb-2">초기 설치 요구사항</h2>
-            <div class="text-6xl font-black text-[#3B82F6] my-4">0<span class="text-3xl">건</span></div>
-            <p class="text-gray-600">URL 링크 클릭만으로 접속 가능하여 별도의 앱 설치가 필요 없습니다.</p>
+        <div class="bg-white rounded-2xl shadow-sm p-8 border-b-8 border-[#3B82F6] flex flex-col items-center text-center transition-all hover:shadow-lg">
+            <h2 class="text-xl font-bold text-gray-500 mb-2">애플리케이션 설치</h2>
+            <div class="text-7xl font-black text-[#1E3A8A] my-4">0<span class="text-2xl ml-1 text-gray-400">건</span></div>
+            <p class="text-gray-500 text-sm">웹 브라우저만 있으면 어디서나 접속</p>
         </div>
     </div>
 
-    <section class="mb-12">
-        <div class="bg-white rounded-xl shadow-md p-6">
-            <h2 class="text-3xl font-bold text-[#1E3A8A] mb-4 border-b-2 border-gray-100 pb-2">기존 방식 대비 준비 시간 비교</h2>
-            <p class="mb-6 text-gray-700">전통적인 수동 방식 대비 준비 시간을 획기적으로 단축합니다. (범례: 우측 하단 배치)</p>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <section class="bg-white rounded-2xl shadow-sm p-8">
+            <h2 class="text-2xl font-bold text-[#1E3A8A] mb-6 flex items-center">
+                <span class="w-2 h-8 bg-[#F59E0B] mr-3 rounded-full"></span>준비 시간 단축 효과
+            </h2>
             <div class="chart-container">
                 <canvas id="setupTimeChart"></canvas>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-        <section class="bg-white rounded-xl shadow-md p-6">
-            <h2 class="text-2xl font-bold text-[#1E3A8A] mb-4 border-b-2 border-gray-100 pb-2">모바일 최적화 기기 분포</h2>
-            <p class="mb-6 text-gray-700">다양한 기기 환경에서의 안정성을 보장합니다. (범례: 우측 중앙 배치)</p>
+        <section class="bg-white rounded-2xl shadow-sm p-8">
+            <h2 class="text-2xl font-bold text-[#1E3A8A] mb-6 flex items-center">
+                <span class="w-2 h-8 bg-[#3B82F6] mr-3 rounded-full"></span>기기별 접속 분포
+            </h2>
             <div class="chart-container">
                 <canvas id="deviceUsageChart"></canvas>
             </div>
         </section>
-
-        <section class="bg-white rounded-xl shadow-md p-6 flex flex-col">
-            <h2 class="text-2xl font-bold text-[#1E3A8A] mb-4 border-b-2 border-gray-100 pb-2">작동 원리 및 아키텍처</h2>
-            <p class="mb-6 text-gray-700">중앙 Firebase Hub를 통한 실시간 전송 프로세스입니다.</p>
-            
-            <div class="flex-grow flex flex-col sm:flex-row items-center justify-center py-12 space-y-6 sm:space-y-0 sm:space-x-4 md:space-x-8">
-                <div class="diagram-box bg-[#1E3A8A] w-36 h-36 flex-shrink-0 z-10">
-                    <span class="text-4xl mb-2">💻</span>
-                    <span class="text-sm">교수용 제어</span>
-                </div>
-                
-                <div class="text-3xl text-[#F59E0B] transform rotate-90 sm:rotate-0 flex items-center justify-center">
-                    <span class="animate-pulse">➔</span>
-                </div>
-                
-                <div class="diagram-box bg-[#F59E0B] w-44 h-44 flex-shrink-0 z-20 scale-105 shadow-xl">
-                    <span class="text-5xl mb-2">☁️</span>
-                    <span class="text-base">Firebase Hub</span>
-                </div>
-                
-                <div class="text-3xl text-[#F59E0B] transform rotate-90 sm:rotate-0 flex items-center justify-center">
-                    <span class="animate-pulse">➔</span>
-                </div>
-                
-                <div class="diagram-box bg-[#3B82F6] w-36 h-36 flex-shrink-0 z-10">
-                    <span class="text-4xl mb-2">📱</span>
-                    <span class="text-sm">학생용 미러링</span>
-                </div>
-            </div>
-        </section>
     </div>
 
-    <section class="mb-12">
-        <div class="bg-white rounded-xl shadow-md p-6">
-            <h2 class="text-3xl font-bold text-[#1E3A8A] mb-4 border-b-2 border-gray-100 pb-2">학습 몰입도 향상 추이</h2>
-            <p class="mb-6 text-gray-700">시스템 도입 이후 낭비되는 시간이 지수적으로 감소합니다. (범례: 우측 하단 배치)</p>
-            <div class="chart-container">
-                <canvas id="focusTrendChart"></canvas>
+    <section class="bg-white rounded-2xl shadow-sm p-8 mb-12">
+        <h2 class="text-2xl font-bold text-[#1E3A8A] mb-10 text-center">시스템 아키텍처</h2>
+        <div class="flex flex-col md:flex-row items-center justify-around space-y-8 md:space-y-0">
+            <div class="diagram-box bg-[#1E3A8A] w-40 h-40">
+                <span class="text-4xl mb-2">👨‍🏫</span>
+                <span class="text-sm">교수자 제어</span>
+            </div>
+            <div class="text-4xl text-amber-500 flow-arrow hidden md:block">➔</div>
+            <div class="diagram-box bg-[#F59E0B] w-48 h-48 z-10 scale-110 shadow-2xl">
+                <span class="text-5xl mb-2">☁️</span>
+                <span class="text-lg">Realtime Hub</span>
+            </div>
+            <div class="text-4xl text-amber-500 flow-arrow hidden md:block">➔</div>
+            <div class="diagram-box bg-[#3B82F6] w-40 h-40">
+                <span class="text-4xl mb-2">🎓</span>
+                <span class="text-sm">학생용 미러링</span>
             </div>
         </div>
     </section>
 
+    <section class="bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl p-8 text-center">
+        <h3 class="text-2xl font-bold text-[#1E3A8A] mb-4">실시간 동기화 테스트</h3>
+        <p class="text-gray-600 mb-6">아래 버튼을 클릭하여 학생용 페이지의 실시간 동작을 확인해보세요.</p>
+        <a href="https://lecture-uom.github.io/math.html" 
+           class="inline-block bg-[#1E3A8A] text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-800 transition-colors shadow-lg">
+            학생용 미러링 페이지 열기
+        </a>
+    </section>
+
 </main>
 
-<footer class="bg-gray-800 text-gray-300 py-8 text-center text-sm">
+<footer class="bg-gray-900 text-gray-400 py-12 text-center">
     <div class="max-w-6xl mx-auto px-4">
-        <p class="mb-2 font-bold">호서대학교 수학의이해 담당교수 배수기</p>
-        <p>미래형 교육 인프라 선진화를 위한 혁신적 디지털 강의 도구</p>
+        <p class="text-white font-bold mb-2">호서대학교 수학의이해</p>
+        <p class="text-sm">배수기 교수 | 미래형 디지털 교육 인프라</p>
     </div>
 </footer>
 
 <script>
-function wrapLabelText(labelStr) {
-    if (labelStr.length <= 16) return labelStr;
-    const words = labelStr.split(' ');
-    const lines = [];
-    let currentLine = '';
-    for (let i = 0; i < words.length; i++) {
-        if ((currentLine + words[i]).length > 16) {
-            if (currentLine.trim() !== '') lines.push(currentLine.trim());
-            currentLine = words[i] + ' ';
-        } else {
-            currentLine += words[i] + ' ';
-        }
-    }
-    if (currentLine.trim() !== '') lines.push(currentLine.trim());
-    return lines;
-}
-
-const customTooltipConfig = {
-    callbacks: {
-        title: function(tooltipItems) {
-            const item = tooltipItems[0];
-            let label = item.chart.data.labels[item.dataIndex];
-            return Array.isArray(label) ? label.join(' ') : label;
-        }
-    }
-};
+// 차트 기본 설정 공통화
+Chart.defaults.font.family = 'Pretendard';
+Chart.defaults.color = '#6B7280';
 
 window.onload = function() {
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js not loaded');
-        return;
-    }
-
-    // 1. Bar Chart
-    new Chart(document.getElementById('setupTimeChart').getContext('2d'), {
+    // 1. 막대 차트 (준비 시간)
+    new Chart(document.getElementById('setupTimeChart'), {
         type: 'bar',
         data: {
-            labels: ["기존 앱 설치 방식", "수동 파일 열기", "Web-Sync 접속"].map(wrapLabelText),
+            labels: ["기존 앱 설치", "수동 파일", "Web-Sync"],
             datasets: [{
-                label: '소요 시간 (초)',
+                label: '소요 시간(초)',
                 data: [180, 45, 2],
-                backgroundColor: ['#9ca3af', '#9ca3af', '#F59E0B'],
-                borderRadius: 6
+                backgroundColor: ['#E5E7EB', '#D1D5DB', '#F59E0B'],
+                borderRadius: 8,
+                barThickness: 40
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                tooltip: customTooltipConfig,
-                legend: { 
-                    display: true, 
-                    position: 'bottom',
-                    align: 'end',
-                    labels: { boxWidth: 12, padding: 15 }
-                }
-            }
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, grid: { display: false } } }
         }
     });
 
-    // 2. Doughnut Chart (Legend moved to RIGHT)
-    new Chart(document.getElementById('deviceUsageChart').getContext('2d'), {
+    // 2. 도넛 차트 (기기 분포)
+    new Chart(document.getElementById('deviceUsageChart'), {
         type: 'doughnut',
         data: {
-            labels: ["데스크톱/노트북", "아이패드/태블릿", "모바일/스마트폰"].map(wrapLabelText),
+            labels: ["PC/노트북", "태블릿", "스마트폰"],
             datasets: [{
                 data: [35, 50, 15],
                 backgroundColor: ['#1E3A8A', '#3B82F6', '#93C5FD'],
-                borderWidth: 2,
-                borderColor: '#ffffff'
+                hoverOffset: 15
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                tooltip: customTooltipConfig,
-                legend: { 
-                    position: 'right', // 확실하게 우측으로 이동
-                    align: 'center',
-                    labels: { 
-                        boxWidth: 15, 
-                        padding: 20,
-                        font: { size: 12 }
-                    }
-                }
+                legend: { position: 'right', labels: { usePointStyle: true, padding: 20 } }
             },
-            layout: {
-                padding: { left: 10, right: 30, top: 10, bottom: 10 }
-            },
-            cutout: '60%'
-        }
-    });
-
-    // 3. Line Chart
-    new Chart(document.getElementById('focusTrendChart').getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: ["도입 전", "1주차", "4주차", "8주차", "12주차", "학기말"].map(wrapLabelText),
-            datasets: [{
-                label: '지연 시간 (분)',
-                data: [12, 10, 0.5, 0.2, 0.1, 0.1],
-                borderColor: '#F59E0B',
-                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                tooltip: customTooltipConfig,
-                legend: { 
-                    position: 'bottom', 
-                    align: 'end',
-                    labels: { boxWidth: 12, padding: 15 }
-                }
-            }
+            cutout: '70%'
         }
     });
 };
 </script>
+</body>
+</html>
 
 <div class="box">
     <h1>수학의이해 강의용 페이지 테스트</h1>
