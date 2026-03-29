@@ -179,14 +179,24 @@
       }
     }
 
+   // [수정된] 페이지 정보 표시 및 버튼 상태 제어 함수
     function updatePageDisplay() {
       pageInfo.textContent = `${currentPage} / ${totalPages}`;
       
-      // 버튼 활성화/비활성화 제어
+      // Prev 버튼은 1페이지에서만 비활성화 (실수 방지)
       prevBtn.disabled = (currentPage <= 1);
-      nextBtn.disabled = (currentPage >= totalPages);
-    }
-
+      
+      // Next 버튼은 비활성화하지 않고 클릭을 허용하여 메시지를 띄움
+      nextBtn.disabled = false; 
+      
+      // 마지막 페이지 도달 시 버튼 색상만 살짝 변경 (시각적 피드백)
+      if (currentPage >= totalPages) {
+        nextBtn.style.opacity = "0.5";
+      } else {
+        nextBtn.style.opacity = "1";
+      }
+    } 
+    
     async function updateView(isStart = true) {
       const pdfPath = `${currentChapter}/${currentFile}`;
       // #page= 옵션을 사용하여 뷰어의 페이지 변경
@@ -221,22 +231,32 @@
       updateView();
     });
 
-    // 버튼 클릭 이벤트
-    prevBtn.addEventListener("click", () => {
+    // Prev 버튼 클릭 이벤트
+   prevBtn.addEventListener("click", () => {
       if (currentPage > 1) {
         currentPage--;
         updateView();
+        statusLine.textContent = "● Synced: " + currentFile;
+        statusLine.style.color = "#28a745";
       }
-    });
+    }); 
 
-    nextBtn.addEventListener("click", () => {
+    // [수정된] Next 버튼 클릭 이벤트 
+   nextBtn.addEventListener("click", () => {
       if (currentPage < totalPages) {
         currentPage++;
         updateView();
+        statusLine.textContent = "● Synced: " + currentFile;
+        statusLine.style.color = "#28a745";
       } else {
-        alert("마지막 페이지입니다.");
+        // 마지막 페이지일 때 처리
+        statusLine.textContent = "⚠️ 마지막 페이지입니다.";
+        statusLine.style.color = "#e67e22"; // 주황색 강조
+        
+        // 원하신다면 브라우저 알림창도 함께 띄울 수 있습니다.
+        // alert("마지막 페이지입니다."); 
       }
-    });
+    }); 
 
     // PDF 로드 완료 시 전체 페이지 수 동기화
     pdfFrame.addEventListener("load", () => {
