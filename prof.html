@@ -51,7 +51,7 @@
     button.nav:disabled { background: #dee2e6; color: #adb5bd; cursor: not-allowed; }
 
     #startBtn { background: #28a745; color: white; margin-top: auto; padding: 15px; font-size: 1rem; }
-    #statusLine { font-size: 0.7rem; color: #28a745; text-align: center; margin-top: 5px; font-weight: bold; }
+    #statusLine { font-size: 0.7rem; color: #6c757d; text-align: center; margin-top: 5px; font-weight: bold; }
 
     /* 우측 PDF 영역 (5/6) */
     #viewerWrap { flex: 1; background: #525659; position: relative; }
@@ -83,7 +83,7 @@
         </div>
       </div>
 
-      <p id="statusLine">● System Ready</p>
+      <p id="statusLine">● 수업 대기 중 (학생 화면 정지)</p>
       <button id="startBtn">수업 시작 신호 전송</button>
     </div>
 
@@ -96,7 +96,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
     import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
-    // ----- [필독] 교수님의 Firebase 설정값을 여기에 꼭 넣어주세요 -----
+    // ----- [필독] 교수님의 Firebase 설정값 -----
     const firebaseConfig = {
       apiKey: "AIzaSyAuXErMs-3Wj24Xo-o40mZRQUHLLX1r-0I",
       authDomain: "lecture-uom.firebaseapp.com",
@@ -130,11 +130,13 @@
       chapterex: ["ex-2.pdf", "ex-3.pdf", "ex-4.pdf", "ex-5.pdf", "ex-6.pdf", "ex-7.pdf", "ex-8.pdf", "ex-9.pdf", "ex-11.pdf", "ex-12.pdf", "ex-13-1.pdf", "ex-13-2.pdf", "ex-14.pdf"]
     };
 
-
     let currentChapter = "chapter1";
     let currentFile = chapters.chapter1[0];
     let currentPage = 1;
-    let totalPages = 1; // 전체 페이지 수를 저장할 변수
+    let totalPages = 1; 
+
+    // ★ [핵심 추가] 수업이 시작되었는지 확인하는 스위치입니다. (처음엔 꺼져있음)
+    let isLessonStarted = false; 
 
     const chapterSelect = document.getElementById("chapterSelect");
     const fileSelect = document.getElementById("fileSelect");
@@ -163,7 +165,6 @@
       currentFile = chapters[ch][0];
     }
 
-    // [핵심] 뷰어에서 전체 페이지 수 가져오기
     function syncTotalPages() {
       try {
         const viewerApp = pdfFrame.contentWindow.PDFViewerApplication;
@@ -171,26 +172,18 @@
           totalPages = viewerApp.pagesCount;
           updatePageDisplay();
         } else {
-          // 아직 로드가 안 된 경우 재시도
           setTimeout(syncTotalPages, 500);
         }
       } catch (e) {
-        console.log("페이지 수 읽기 대기 중...");
         setTimeout(syncTotalPages, 500);
       }
     }
 
-   // [수정된] 페이지 정보 표시 및 버튼 상태 제어 함수
     function updatePageDisplay() {
       pageInfo.textContent = `${currentPage} / ${totalPages}`;
-      
-      // Prev 버튼은 1페이지에서만 비활성화 (실수 방지)
       prevBtn.disabled = (currentPage <= 1);
-      
-      // Next 버튼은 비활성화하지 않고 클릭을 허용하여 메시지를 띄움
       nextBtn.disabled = false; 
       
-      // 마지막 페이지 도달 시 버튼 색상만 살짝 변경 (시각적 피드백)
       if (currentPage >= totalPages) {
         nextBtn.style.opacity = "0.5";
       } else {
@@ -198,21 +191,34 @@
       }
     } 
     
-    async function updateView(isStart = true) {
+    // 화면을 업데이트하고 Firebase로 데이터를 보내는 함수
+    async function updateView() {
       const pdfPath = `${currentChapter}/${currentFile}`;
-      // #page= 옵션을 사용하여 뷰어의 페이지 변경
       pdfFrame.src = `/pdfjs_clean/web/viewer.html?file=/${pdfPath}#page=${currentPage}`;
       
       updatePageDisplay();
 
       try {
+        // Firebase에 데이터를 저장합니다.
         await set(ref(db, `rooms/${roomId}`), {
           pdf: pdfPath,
           page: currentPage,
-          started: isStart,
+          // ★ [핵심] 무조건 시작이 아니라, isLessonStarted 스위치 상태를 보냅니다.
+          started: isLessonStarted, 
           updatedAt: Date.now()
         });
-        statusLine.textContent = "● Synced: " + currentFile;
+        
+        // 상태창 글씨 업데이트
+        if (isLessonStarted === false) {
+           // 수업 시작 전
+           statusLine.textContent = "● 수업 대기 중 (학생 화면 정지)";
+           statusLine.style.color = "#6c757d";
+        } else {
+           // 수업 시작 후
+           statusLine.textContent = "● Synced: " + currentFile;
+           statusLine.style.color = "#28a745";
+        }
+
       } catch (err) {
         statusLine.textContent = "● Sync Error";
       }
@@ -233,45 +239,45 @@
     });
 
     // Prev 버튼 클릭 이벤트
-   prevBtn.addEventListener("click", () => {
+    prevBtn.addEventListener("click", () => {
       if (currentPage > 1) {
         currentPage--;
         updateView();
-        statusLine.textContent = "● Synced: " + currentFile;
-        statusLine.style.color = "#28a745";
       }
     }); 
 
-    // [수정된] Next 버튼 클릭 이벤트 
-   nextBtn.addEventListener("click", () => {
+    // Next 버튼 클릭 이벤트 
+    nextBtn.addEventListener("click", () => {
       if (currentPage < totalPages) {
         currentPage++;
         updateView();
-        statusLine.textContent = "● Synced: " + currentFile;
-        statusLine.style.color = "#28a745";
       } else {
-        // 마지막 페이지일 때 처리
         statusLine.textContent = "⚠️ 마지막 페이지입니다.";
-        statusLine.style.color = "#e67e22"; // 주황색 강조
-        
-        // 원하신다면 브라우저 알림창도 함께 띄울 수 있습니다.
-        // alert("마지막 페이지입니다."); 
+        statusLine.style.color = "#e67e22"; 
       }
     }); 
 
-    // PDF 로드 완료 시 전체 페이지 수 동기화
+    // PDF 로드 완료 시
     pdfFrame.addEventListener("load", () => {
       syncTotalPages();
     });
 
+    // ★ [핵심] 수업 시작 버튼을 눌렀을 때의 행동
     document.getElementById("startBtn").addEventListener("click", () => {
-      updateView(true);
-      alert("수업 시작 신호를 전송했습니다!");
+      isLessonStarted = true; // 스위치를 켭니다!
+      updateView(); // 켠 상태로 다시 데이터를 보냅니다!
+      
+      alert("수업 시작 신호를 전송했습니다! 학생 화면이 동기화됩니다.");
+      
+      // 버튼 색상 파란색으로 변경
+      const startBtn = document.getElementById("startBtn");
+      startBtn.textContent = "수업 진행 중 (동기화 활성)";
+      startBtn.style.background = "#007bff";
     });
 
+    // 처음 켰을 때 실행
     updateFileOptions(currentChapter);
     updateView(); 
   </script>
 </body>
 </html> 
-
