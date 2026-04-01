@@ -39,24 +39,55 @@
       font-size: 0.9rem; background-color: #f8f9fa; cursor: pointer; outline: none;
     }
 
-    .page-controls { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    /* --- [수정] 동영상 버튼 디자인: 아주 선명한 레드 --- */
+    .video-control-group { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-video { 
+      flex: 1; 
+      background-color: #FF0000; /* 유튜브 레드 */
+      color: white; 
+      border: none;
+      border-radius: 6px;
+      padding: 12px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: not-allowed;
+      opacity: 0.4; /* 수업 시작 전에는 약간 불투명 */
+      transition: all 0.2s;
+      box-shadow: 0 4px 0px #b02a37; /* 입체감 */
+    }
     
+    /* 수업 시작 후 활성화 상태 */
+    .btn-video.active { 
+      opacity: 1; 
+      cursor: pointer; 
+    }
+    .btn-video.active:active { transform: translateY(2px); box-shadow: none; }
+
+    /* 현재 재생 중일 때 깜빡이는 효과 */
+    .btn-video.playing {
+      background-color: #ffffff !important;
+      color: #FF0000 !important;
+      border: 2px solid #FF0000;
+      animation: pulse-red 1.5s infinite;
+    }
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+    }
+
+    #stopVideoBtn { 
+      width: 100%; background: #495057; color: white; margin-top: 8px; 
+      display: none; padding: 10px; font-size: 0.8rem; border-radius: 6px;
+    }
+    /* ------------------------------------------- */
+
+    .page-controls { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
     .nav-btns { display: flex; gap: 5px; align-items: center; justify-content: center; background: #f1f3f5; padding: 5px; border-radius: 8px; }
     #pageInfo { font-weight: 800; font-size: 1.1rem; color: #007bff; min-width: 70px; text-align: center; }
 
-    button { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; }
-    button.nav { flex: 1; background: #495057; color: white; }
-    button.nav:hover { background: #343a40; }
-    button.nav:disabled { background: #dee2e6; color: #adb5bd; cursor: not-allowed; }
-
-    /* 동영상 버튼 스타일 */
-    .video-btns { display: grid; grid-cols: 2; gap: 8px; margin-top: 5px; }
-    .btn-video { background: #dc3545; color: white; opacity: 0.4; cursor: not-allowed; flex: 1; }
-    .btn-video.active { opacity: 1; cursor: pointer; }
-    .btn-video.active:hover { background: #c82333; }
-    .btn-stop-video { background: #6c757d; color: white; width: 100%; margin-top: 5px; font-size: 0.8rem; padding: 8px; }
-
-    #startBtn { background: #28a745; color: white; margin-top: auto; padding: 15px; font-size: 1rem; }
+    button.nav { flex: 1; background: #495057; color: white; padding: 12px; border-radius: 6px; }
+    #startBtn { background: #28a745; color: white; margin-top: auto; padding: 15px; font-size: 1rem; border-radius: 6px; font-weight: bold; }
     #statusLine { font-size: 0.7rem; color: #6c757d; text-align: center; margin-top: 5px; font-weight: bold; }
 
     #viewerWrap { flex: 1; background: #525659; position: relative; }
@@ -79,14 +110,14 @@
       <select id="chapterSelect"></select>
       <select id="fileSelect"></select>
 
-      <p class="section-title" style="margin-top:10px;">Video Control</p>
-      <div class="video-btns" style="display: flex; gap: 5px;">
+      <p class="section-title" style="margin-top:15px;">Video Control</p>
+      <div class="video-control-group">
         <button id="video1Btn" class="btn-video">동영상 1</button>
         <button id="video2Btn" class="btn-video">동영상 2</button>
       </div>
-      <button id="stopVideoBtn" class="btn-stop-video" style="display:none;">영상 끄기</button>
+      <button id="stopVideoBtn" onclick="stopVideo()">⏹ 영상 종료 (교안 복귀)</button>
 
-      <p class="section-title" style="margin-top:10px;">Page Control</p>
+      <p class="section-title" style="margin-top:15px;">Page Control</p>
       <div class="page-controls">
         <div class="nav-btns">
           <button id="prevBtn" class="nav">Prev</button>
@@ -106,7 +137,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-    import { getDatabase, ref, set, update } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAuXErMs-3Wj24Xo-o40mZRQUHLLX1r-0I",
@@ -145,7 +176,7 @@
     let currentPage = 1;
     let totalPages = 1; 
     let isLessonStarted = false; 
-    let currentVideoID = ""; // 추가: 현재 재생 중인 영상 ID
+    let currentVideoID = "";
 
     const chapterSelect = document.getElementById("chapterSelect");
     const fileSelect = document.getElementById("fileSelect");
@@ -154,13 +185,11 @@
     const statusLine = document.getElementById("statusLine");
     const nextBtn = document.getElementById("nextBtn");
     const prevBtn = document.getElementById("prevBtn");
-    
-    // 동영상 버튼 관련 엘리먼트
     const v1Btn = document.getElementById("video1Btn");
     const v2Btn = document.getElementById("video2Btn");
     const stopVBtn = document.getElementById("stopVideoBtn");
 
-    // 장 선택 초기화
+    // 초기 설정
     for (const ch in chapters) {
       const option = document.createElement("option");
       option.value = ch;
@@ -179,126 +208,70 @@
       currentFile = chapters[ch][0];
     }
 
-    function syncTotalPages() {
-      try {
-        const viewerApp = pdfFrame.contentWindow.PDFViewerApplication;
-        if (viewerApp && viewerApp.pagesCount) {
-          totalPages = viewerApp.pagesCount;
-          updatePageDisplay();
-        } else {
-          setTimeout(syncTotalPages, 500);
-        }
-      } catch (e) {
-        setTimeout(syncTotalPages, 500);
-      }
-    }
-
-    function updatePageDisplay() {
-      pageInfo.textContent = `${currentPage} / ${totalPages}`;
-      prevBtn.disabled = (currentPage <= 1);
-      nextBtn.disabled = false; 
-      
-      if (currentPage >= totalPages) {
-        nextBtn.style.opacity = "0.5";
-      } else {
-        nextBtn.style.opacity = "1";
-      }
-    } 
-    
     async function updateView() {
       const pdfPath = `${currentChapter}/${currentFile}`;
       pdfFrame.src = `/pdfjs_clean/web/viewer.html?file=/${pdfPath}#page=${currentPage}`;
       
-      updatePageDisplay();
-
       try {
         await set(ref(db, `rooms/${roomId}`), {
           pdf: pdfPath,
           page: currentPage,
           started: isLessonStarted, 
-          videoID: currentVideoID, // 추가: 영상 ID 전송
+          videoID: currentVideoID,
           updatedAt: Date.now()
         });
         
-        if (isLessonStarted === false) {
-           statusLine.textContent = "● 수업 대기 중 (학생 화면 정지)";
-           statusLine.style.color = "#6c757d";
+        if (!isLessonStarted) {
+          statusLine.textContent = "● 수업 대기 중 (학생 화면 정지)";
+          statusLine.style.color = "#6c757d";
         } else {
-           statusLine.textContent = currentVideoID ? "● 영상 재생 중" : "● Synced: " + currentFile;
-           statusLine.style.color = "#28a745";
+          statusLine.textContent = currentVideoID ? "● 영상 송출 중" : "● Synced: " + currentFile;
+          statusLine.style.color = "#28a745";
         }
-      } catch (err) {
-        statusLine.textContent = "● Sync Error";
-      }
+      } catch (err) { console.error(err); }
     }
 
-    // 동영상 재생 함수
-    async function sendVideo(id) {
+    // 동영상 재생 제어
+    function playVideo(id, btn) {
       if (!isLessonStarted) {
         alert("수업 시작 버튼을 먼저 눌러주세요!");
         return;
       }
       currentVideoID = id;
+      v1Btn.classList.remove('playing');
+      v2Btn.classList.remove('playing');
+      btn.classList.add('playing');
       stopVBtn.style.display = "block";
       updateView();
     }
 
-    v1Btn.addEventListener("click", () => sendVideo("tictYHEEUdg")); // 영상 1 ID 입력
-    v2Btn.addEventListener("click", () => sendVideo("OSN-7LdP3Cw")); // 영상 2 ID 입력
-    
-    stopVBtn.addEventListener("click", () => {
+    window.stopVideo = function() {
       currentVideoID = "";
+      v1Btn.classList.remove('playing');
+      v2Btn.classList.remove('playing');
       stopVBtn.style.display = "none";
       updateView();
-    });
+    }
 
-    chapterSelect.addEventListener("change", (e) => {
-      currentChapter = e.target.value;
-      updateFileOptions(currentChapter);
-      currentPage = 1;
-      updateView();
-    });
+    v1Btn.onclick = () => playVideo("tictYHEEUdg", v1Btn); // 영상 1
+    v2Btn.onclick = () => playVideo("OSN-7LdP3Cw", v2Btn); // 영상 2
 
-    fileSelect.addEventListener("change", (e) => {
-      currentFile = e.target.value;
-      currentPage = 1;
-      updateView();
-    });
-
-    prevBtn.addEventListener("click", () => {
-      if (currentPage > 1) {
-        currentPage--;
-        updateView();
-      }
-    }); 
-
-    nextBtn.addEventListener("click", () => {
-      if (currentPage < totalPages) {
-        currentPage++;
-        updateView();
-      }
-    }); 
-
-    pdfFrame.addEventListener("load", () => {
-      syncTotalPages();
-    });
-
-    document.getElementById("startBtn").addEventListener("click", () => {
+    // 수업 시작
+    document.getElementById("startBtn").onclick = function() {
       isLessonStarted = true;
-      
-      // 버튼 활성화 시각적 효과
+      this.textContent = "✅ 수업 진행 중";
+      this.style.background = "#007bff";
       v1Btn.classList.add('active');
       v2Btn.classList.add('active');
-      
       updateView();
-      
-      alert("수업 시작 신호를 전송했습니다! 이제 동영상 기능을 사용할 수 있습니다.");
-      
-      const startBtn = document.getElementById("startBtn");
-      startBtn.textContent = "수업 진행 중 (동기화 활성)";
-      startBtn.style.background = "#007bff";
-    });
+    };
 
+    // 기타 이벤트
+    chapterSelect.onchange = (e) => { currentChapter = e.target.value; updateFileOptions(currentChapter); currentPage = 1; updateView(); };
+    fileSelect.onchange = (e) => { currentFile = e.target.value; currentPage = 1; updateView(); };
+    prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; updateView(); } };
+    nextBtn.onclick = () => { currentPage++; updateView(); }; // totalPages 연동 생략(간소화)
+    
     updateFileOptions(currentChapter);
     updateView(); 
   </script>
