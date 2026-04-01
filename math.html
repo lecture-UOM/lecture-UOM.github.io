@@ -8,28 +8,26 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 
   <style>
-    /* 기본 설정: 모바일 풀 화면 및 폰트 */
+    /* 기본 설정 */
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: Pretendard, sans-serif; }
     body, html { width: 100%; height: 100%; overflow: hidden; background-color: #efefef; }
 
-    /* 표지 화면 (Splash Screen) 스타일 */
+    /* 표지 화면 (Splash Screen) */
     #splashScreen {
       position: absolute; width: 100%; height: 100%;
       background-color: #efefef; display: flex; flex-direction: column;
       justify-content: center; align-items: center; z-index: 100;
       transition: opacity 0.8s ease, visibility 0.8s;
     }
-
     #coverImage { width: 100%; height: 100%; object-fit: contain; display: block; }
 
-    /* [UX 보완] 대기 중 애니메이션 메시지 */
+    /* 대기 중 애니메이션 */
     .waiting-msg {
       position: absolute; bottom: calc(20px + env(safe-area-inset-bottom));
       left: 50%; transform: translateX(-50%);
       font-size: 0.85rem; color: #795548; font-weight: 500;
       display: flex; align-items: center; gap: 8px;
     }
-    
     .waiting-dot {
       width: 6px; height: 6px; background-color: #795548; border-radius: 50%;
       animation: pulse 1.5s infinite;
@@ -42,13 +40,20 @@
       50% { opacity: 1; transform: scale(1.1); }
     }
 
-    /* PDF 뷰어 영역 스타일 */
+    /* PDF 뷰어 영역 */
     #viewerWrap {
       display: none; width: 100%; height: 100%; z-index: 10;
       padding-top: env(safe-area-inset-top); background: white;
     }
-
     iframe { width: 100%; height: 100%; border: none; display: block; background: white; }
+
+    /* [추가] 동영상 레이어 스타일 */
+    #videoOverlay {
+      display: none; /* 평소엔 숨김 */
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: black; z-index: 200; /* PDF보다 위에 뜸 */
+    }
+    #ytPlayer { width: 100%; height: 100%; border: none; }
   </style>
 </head>
 <body>
@@ -67,11 +72,15 @@
     <iframe id="pdfFrame"></iframe>
   </div>
 
+  <div id="videoOverlay">
+    <iframe id="ytPlayer" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
-    // ----- 교수님의 Firebase 설정값 -----
+    // Firebase 설정 (교수님 설정값 유지)
     const firebaseConfig = {
       apiKey: "AIzaSyAuXErMs-3Wj24Xo-o40mZRQUHLLX1r-0I",
       authDomain: "lecture-uom.firebaseapp.com",
@@ -82,7 +91,6 @@
       appId: "1:1071262547326:web:ca2999788ce8422d12072f",
       measurementId: "G-QW41EHM2VL"
     };
-    // -------------------------------------------------------------------------------------------
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
@@ -91,105 +99,70 @@
     const splashScreen = document.getElementById("splashScreen");
     const viewerWrap = document.getElementById("viewerWrap");
     const pdfFrame = document.getElementById("pdfFrame");
-    const waitingMsg = document.getElementById("waitingMsg");
+    const videoOverlay = document.getElementById("videoOverlay");
+    const ytPlayer = document.getElementById("ytPlayer");
 
     let switchedToViewer = false;
 
-    // ----- [추가 기능] 수업 시작 애니메이션 함수 -----
+    // 수업 시작 안내 팝업 함수
     function playStartAnimation() {
       const overlay = document.createElement('div');
       overlay.innerHTML = `
-          <h1 style="color: white; font-size: 2rem; font-weight: bold; text-shadow: 0 4px 15px rgba(0,0,0,0.5); transform: scale(0); transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center;">🎉 수업이 시작되었습니다!</h1>
-          <p style="color: #93C5FD; font-size: 1rem; margin-top: 1rem; opacity: 0; transition: opacity 0.5s ease-in 0.3s;">화면 동기화 중...</p>
+          <h1 style="color: white; font-size: 1.5rem; font-weight: bold; text-align: center;">🎉 수업이 시작되었습니다!</h1>
+          <p style="color: #93C5FD; font-size: 0.9rem; margin-top: 0.5rem;">화면 동기화 중...</p>
       `;
       overlay.style.cssText = `
           position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-          background: rgba(30, 58, 138, 0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; 
-          z-index: 9999; opacity: 0; transition: opacity 0.4s;
+          background: rgba(30, 58, 138, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; 
+          z-index: 9999; transition: opacity 0.4s;
       `;
       document.body.appendChild(overlay);
-
-      setTimeout(() => {
-          overlay.style.opacity = '1';
-          overlay.querySelector('h1').style.transform = 'scale(1)';
-          overlay.querySelector('p').style.opacity = '1';
-      }, 50);
-
-      setTimeout(() => {
-          overlay.style.opacity = '0';
-          overlay.querySelector('h1').style.transform = 'scale(1.2)';
-          setTimeout(() => overlay.remove(), 400); 
-      }, 2500); // 2.5초간 팝업 표시
-    }
-    // ------------------------------------------------------
-
-    // PDF 뷰어 내의 불필요한 버튼 숨기기 로직
-    function hideViewerButtons() {
-      try {
-        const iframeDoc = pdfFrame.contentDocument || pdfFrame.contentWindow.document;
-        if (!iframeDoc) return;
-        const selectors = [
-          "#openFile", "#secondaryOpenFile", "#printButton", "#downloadButton",
-          "#secondaryPrint", "#secondaryDownload", "#viewBookmark"
-        ];
-        selectors.forEach((selector) => {
-          const el = iframeDoc.querySelector(selector);
-          if (el) el.style.display = "none";
-        });
-      } catch (e) {
-        console.log("버튼 숨기기 대기중...");
-      }
+      setTimeout(() => { overlay.style.opacity = '0'; setTimeout(() => overlay.remove(), 400); }, 2000);
     }
 
-    pdfFrame.addEventListener("load", () => {
-      hideViewerButtons();
-      setTimeout(hideViewerButtons, 500);
-      setTimeout(hideViewerButtons, 1500);
-    });
-
-    // ----- [핵심 로직] Firebase 데이터 실시간 감시 -----
+    // Firebase 실시간 감시
     onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
       const data = snapshot.val();
+      if (!data) return;
 
-      // 데이터가 없거나, 교수님이 아직 시작버튼을 누르지 않은 상태(started: false)일 때
-      if (!data || data.started === false) {
-        // 학생 화면은 계속 커버 이미지(대기 상태)에 머뭅니다.
-        splashScreen.style.opacity = "1";
+      // [1] 수업 시작 여부 체크
+      if (data.started === false) {
         splashScreen.style.display = "flex";
         viewerWrap.style.display = "none";
-        switchedToViewer = false; // 상태 초기화
-        return; // 이 줄이 있어야 밑으로(화면 전환) 넘어가지 않습니다!
+        videoOverlay.style.display = "none";
+        switchedToViewer = false;
+        return;
       }
 
-      // ----------------------------------------------------------------
-      // 여기부터는 교수님이 [수업 시작 신호 전송] 버튼을 눌렀을 때(started: true)만 실행됩니다.
-      
+      // [2] 동영상 재생 여부 체크 (최우선 순위)
+      if (data.videoID && data.videoID !== "") {
+        videoOverlay.style.display = "block";
+        const videoSrc = `https://www.youtube.com/embed/${data.videoID}?autoplay=1&rel=0&showinfo=0&modestbranding=1`;
+        if (ytPlayer.src !== videoSrc) {
+          ytPlayer.src = videoSrc;
+        }
+      } else {
+        videoOverlay.style.display = "none";
+        ytPlayer.src = ""; // 영상 주소 초기화 (정지)
+      }
+
+      // [3] PDF 교안 동기화 처리
       const pdf = data.pdf || "chapter1/1-1.pdf";
       const page = data.page || 1;
 
-      // 아직 커버 화면을 보고 있었다면, 이제 뷰어로 넘어갑니다.
       if (!switchedToViewer) {
-        // [추가] 처음 넘어갈 때 애니메이션 한 번 띄워주기
         playStartAnimation();
-
-        splashScreen.style.opacity = "0";
-        setTimeout(() => {
-          splashScreen.style.display = "none";
-          viewerWrap.style.display = "block";
-        }, 800);
-        
+        splashScreen.style.display = "none";
+        viewerWrap.style.display = "block";
         pdfFrame.src = `/pdfjs_clean/web/viewer.html?file=/${pdf}#page=${page}`;
         switchedToViewer = true;
-      } 
-      // 이미 뷰어 화면을 보고 있다면 (수업 중이라면) 페이지만 바꿉니다.
-      else {
+      } else {
         const newSrc = `/pdfjs_clean/web/viewer.html?file=/${pdf}#page=${page}`;
         if (pdfFrame.src !== newSrc) {
-            pdfFrame.src = newSrc;
+          pdfFrame.src = newSrc;
         }
       }
     });
-
   </script>
 </body>
 </html>
